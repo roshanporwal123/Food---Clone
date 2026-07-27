@@ -14,7 +14,7 @@ app = FastAPI(title="Food Delivery Clone API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000" , "http://127.0.0.1:3000"],  # Next.js dev server
+    allow_origins=["http://localhost:3000" , "http://127.0.0.1:3000" , "https://food-clone-pied.vercel.app/" ],  # Next.js dev server
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
