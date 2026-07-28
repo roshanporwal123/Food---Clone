@@ -34,11 +34,17 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import SessionLocal, Base, engine
-import app.models as models
+
+# Direct models import karein (agar models.py hai)
+try:
+    from app.models import User, Restaurant, MenuItem, UserRole
+except ImportError:
+    # Agar models folder/package ke andar alag files hain
+    from app.models.models import User, Restaurant, MenuItem, UserRole
 
 app = FastAPI()
 
-# Enable CORS
+# CORS Enable
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -47,7 +53,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Database tables create karein
 Base.metadata.create_all(bind=engine)
 
 @app.get("/")
@@ -60,24 +65,24 @@ def seed_database():
     db = SessionLocal()
     try:
         # Check if restaurants exist
-        if db.query(models.Restaurant).count() > 0:
+        if db.query(Restaurant).count() > 0:
             return {"message": "Database already seeded!"}
 
         # 1. Create Owner User
-        owner = db.query(models.User).filter(models.User.email == "owner@tastytrail.com").first()
+        owner = db.query(User).filter(User.email == "owner@tastytrail.com").first()
         if not owner:
-            owner = models.User(
+            owner = User(
                 name="Restaurant Owner",
                 email="owner@tastytrail.com",
                 hashed_password="dummy_password_hash",
-                role=models.UserRole.restaurant_owner
+                role=UserRole.restaurant_owner
             )
             db.add(owner)
             db.commit()
             db.refresh(owner)
 
         # 2. Create Restaurants
-        rest1 = models.Restaurant(
+        rest1 = Restaurant(
             name="Tasty Trail Hub",
             description="Best North Indian & Fast Food",
             address="123 Main Street",
@@ -89,7 +94,7 @@ def seed_database():
             owner_id=owner.id
         )
 
-        rest2 = models.Restaurant(
+        rest2 = Restaurant(
             name="Pizza & Pasta Express",
             description="Authentic Italian Pizzas",
             address="45 Baker Street",
@@ -108,7 +113,7 @@ def seed_database():
 
         # 3. Create Menu Items
         items = [
-            models.MenuItem(
+            MenuItem(
                 name="Butter Chicken",
                 description="Rich tomato gravy chicken",
                 price=320.0,
@@ -118,7 +123,7 @@ def seed_database():
                 image_url="https://images.unsplash.com/photo-1588166524941-3bf61a9c41db?w=500",
                 restaurant_id=rest1.id
             ),
-            models.MenuItem(
+            MenuItem(
                 name="Margherita Pizza",
                 description="Classic cheese pizza",
                 price=299.0,
