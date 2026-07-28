@@ -1,68 +1,86 @@
-from dotenv import load_dotenv
-load_dotenv()
+# from dotenv import load_dotenv
+# load_dotenv()
+
+# from fastapi import FastAPI
+# from fastapi.middleware.cors import CORSMiddleware
+
+# from app.database import Base, engine
+# from app.routers import auth_router, restaurant_router, menu_router, order_router
+# from app.models import models
+# # Dev ke liye: tables auto-create. Production me Alembic migrations use karo.
+# Base.metadata.create_all(bind=engine)
+
+# app = FastAPI(title="Food Delivery Clone API")
+
+# app.add_middleware(
+#     CORSMiddleware,
+#     # allow_origins=["http://localhost:3000" , "http://127.0.0.1:3000" , "https://food-clone-pied.vercel.app","https://food-clone-el2ovod2v-roshan-porwal-s-projects.vercel.app" ],  # Next.js dev server
+#     allow_origins=["*"],
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
+
+# app.include_router(auth_router.router)
+# app.include_router(restaurant_router.router)
+# app.include_router(menu_router.router)
+# app.include_router(order_router.router)
+
+
+# @app.get("/")
+# def root():
+#     return {"message": "Food Delivery Clone API is running"}
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.database import SessionLocal, Base, engine
+import app.models as models
 
-from app.database import Base, engine
-from app.routers import auth_router, restaurant_router, menu_router, order_router
-from app.models import models
-# Dev ke liye: tables auto-create. Production me Alembic migrations use karo.
-Base.metadata.create_all(bind=engine)
+app = FastAPI()
 
-app = FastAPI(title="Food Delivery Clone API")
-
+# Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    # allow_origins=["http://localhost:3000" , "http://127.0.0.1:3000" , "https://food-clone-pied.vercel.app","https://food-clone-el2ovod2v-roshan-porwal-s-projects.vercel.app" ],  # Next.js dev server
     allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(auth_router.router)
-app.include_router(restaurant_router.router)
-app.include_router(menu_router.router)
-app.include_router(order_router.router)
-
+# Database tables create karein
+Base.metadata.create_all(bind=engine)
 
 @app.get("/")
-def root():
-    return {"message": "Food Delivery Clone API is running"}
+def read_root():
+    return {"message": "Food Delivery Clone API is Running!"}
 
-# for seeding the database with dummy data
-from fastapi import HTTPException
-from app.database import SessionLocal
-# Apne models import karein
-from app.models import User, Restaurant, MenuItem, UserRole
 
 @app.get("/seed")
 def seed_database():
     db = SessionLocal()
     try:
-        # 1. Check karein agar restaurants pehle se majood hain
-        if db.query(Restaurant).count() > 0:
-            return {"message": "Database me pehle se restaurants exist karte hain!"}
+        # Check if restaurants exist
+        if db.query(models.Restaurant).count() > 0:
+            return {"message": "Database already seeded!"}
 
-        # 2. Pehle ek Dummy Owner User banayein (FK constraint ke liye)
-        owner = db.query(User).filter(User.email == "owner@tastytrail.com").first()
+        # 1. Create Owner User
+        owner = db.query(models.User).filter(models.User.email == "owner@tastytrail.com").first()
         if not owner:
-            owner = User(
+            owner = models.User(
                 name="Restaurant Owner",
                 email="owner@tastytrail.com",
-                hashed_password="dummy_password_hash",  # Fast seed ke liye
-                role=UserRole.restaurant_owner
+                hashed_password="dummy_password_hash",
+                role=models.UserRole.restaurant_owner
             )
             db.add(owner)
             db.commit()
             db.refresh(owner)
 
-        # 3. Dummy Restaurants add karein
-        rest1 = Restaurant(
+        # 2. Create Restaurants
+        rest1 = models.Restaurant(
             name="Tasty Trail Hub",
-            description="Best North Indian & Fast Food in town",
-            address="123 Main Street, Central Market",
+            description="Best North Indian & Fast Food",
+            address="123 Main Street",
             city="Indore",
             cuisine_type="North Indian",
             rating=4.5,
@@ -71,9 +89,9 @@ def seed_database():
             owner_id=owner.id
         )
 
-        rest2 = Restaurant(
+        rest2 = models.Restaurant(
             name="Pizza & Pasta Express",
-            description="Authentic Italian Pizzas with Cheesy Crust",
+            description="Authentic Italian Pizzas",
             address="45 Baker Street",
             city="Indore",
             cuisine_type="Italian",
@@ -88,11 +106,11 @@ def seed_database():
         db.refresh(rest1)
         db.refresh(rest2)
 
-        # 4. In Restaurants ke liye Menu Items add karein
+        # 3. Create Menu Items
         items = [
-            MenuItem(
+            models.MenuItem(
                 name="Butter Chicken",
-                description="Rich cream and tomato gravy chicken",
+                description="Rich tomato gravy chicken",
                 price=320.0,
                 is_veg=False,
                 is_available=True,
@@ -100,19 +118,9 @@ def seed_database():
                 image_url="https://images.unsplash.com/photo-1588166524941-3bf61a9c41db?w=500",
                 restaurant_id=rest1.id
             ),
-            MenuItem(
-                name="Paneer Tikka",
-                description="Grilled paneer marinated in spices",
-                price=240.0,
-                is_veg=True,
-                is_available=True,
-                category="Starters",
-                image_url="https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?w=500",
-                restaurant_id=rest1.id
-            ),
-            MenuItem(
+            models.MenuItem(
                 name="Margherita Pizza",
-                description="Classic cheese and tomato sauce pizza",
+                description="Classic cheese pizza",
                 price=299.0,
                 is_veg=True,
                 is_available=True,
@@ -125,7 +133,7 @@ def seed_database():
         db.add_all(items)
         db.commit()
 
-        return {"message": "Success! 2 Restaurants and Menu Items created successfully."}
+        return {"message": "Database seeded successfully!"}
 
     except Exception as e:
         db.rollback()
