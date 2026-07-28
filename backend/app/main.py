@@ -6,9 +6,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import Base, engine
 from app.routers import auth_router, restaurant_router, menu_router, order_router
-
+from app.models import models
 # Dev ke liye: tables auto-create. Production me Alembic migrations use karo.
-# Base.metadata.create_all(bind=engine)
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Food Delivery Clone API")
 
